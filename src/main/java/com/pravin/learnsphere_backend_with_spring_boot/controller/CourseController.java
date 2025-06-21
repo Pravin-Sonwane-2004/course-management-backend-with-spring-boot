@@ -1,5 +1,6 @@
 package com.pravin.learnsphere_backend_with_spring_boot.controller;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +18,16 @@ public class CourseController {
   @Autowired
   private CourseService courseService;
 
-  
+  @PostMapping("/add/bulk")
+public ResponseEntity<List<CourseResponseDTO>> createCourses(@RequestBody List<CourseRequestDTO> courses) {
+    List<CourseResponseDTO> responseList = new ArrayList<>();
+    for (CourseRequestDTO dto : courses) {
+        CourseResponseDTO created = courseService.createCourse(dto);
+        responseList.add(created);
+    }
+    return ResponseEntity.status(201).body(responseList);
+}
+
   @PostMapping("/add")
   public ResponseEntity<CourseResponseDTO> createCourse(@RequestBody CourseRequestDTO dto) {
     CourseResponseDTO response = courseService.createCourse(dto);
