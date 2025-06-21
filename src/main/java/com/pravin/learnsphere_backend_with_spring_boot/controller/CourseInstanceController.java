@@ -3,15 +3,8 @@ package com.pravin.learnsphere_backend_with_spring_boot.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.pravin.learnsphere_backend_with_spring_boot.dto.InstanceRequestDTO;
 import com.pravin.learnsphere_backend_with_spring_boot.dto.InstanceResponseDTO;
@@ -20,29 +13,41 @@ import com.pravin.learnsphere_backend_with_spring_boot.service.CourseInstanceSer
 @RestController
 @RequestMapping("/api/instances")
 public class CourseInstanceController {
-  @Autowired
-  private CourseInstanceService service;
 
+  @Autowired
+  private CourseInstanceService instanceService;
+
+  // Create a course instance
   @PostMapping
   public ResponseEntity<InstanceResponseDTO> createInstance(@RequestBody InstanceRequestDTO dto) {
-    return new ResponseEntity<>(service.createInstance(dto), HttpStatus.CREATED);
+    InstanceResponseDTO response = instanceService.createInstance(dto);
+    return ResponseEntity.status(201).body(response);
   }
 
+  // List all instances for year and semester
   @GetMapping("/{year}/{semester}")
-  public List<InstanceResponseDTO> listBySemester(@PathVariable int year, @PathVariable int semester) {
-    return service.listInstances(year, semester);
+  public ResponseEntity<List<InstanceResponseDTO>> listInstances(
+      @PathVariable int year,
+      @PathVariable int semester) {
+    return ResponseEntity.ok(instanceService.listInstances(year, semester));
   }
 
+  // Get a specific course instance
   @GetMapping("/{year}/{semester}/{courseId}")
-  public InstanceResponseDTO getInstance(@PathVariable int year, @PathVariable int semester,
+  public ResponseEntity<InstanceResponseDTO> getInstance(
+      @PathVariable int year,
+      @PathVariable int semester,
       @PathVariable String courseId) {
-    return service.getInstance(year, semester, courseId);
+    return ResponseEntity.ok(instanceService.getInstance(year, semester, courseId));
   }
 
+  // Delete a specific course instance
   @DeleteMapping("/{year}/{semester}/{courseId}")
-  public ResponseEntity<Void> deleteInstance(@PathVariable int year, @PathVariable int semester,
+  public ResponseEntity<Void> deleteInstance(
+      @PathVariable int year,
+      @PathVariable int semester,
       @PathVariable String courseId) {
-    service.deleteInstance(year, semester, courseId);
+    instanceService.deleteInstance(year, semester, courseId);
     return ResponseEntity.noContent().build();
   }
 }

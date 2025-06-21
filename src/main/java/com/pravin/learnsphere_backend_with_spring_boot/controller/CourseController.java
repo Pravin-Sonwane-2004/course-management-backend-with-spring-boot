@@ -3,15 +3,8 @@ package com.pravin.learnsphere_backend_with_spring_boot.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.pravin.learnsphere_backend_with_spring_boot.dto.CourseRequestDTO;
 import com.pravin.learnsphere_backend_with_spring_boot.dto.CourseResponseDTO;
@@ -20,27 +13,33 @@ import com.pravin.learnsphere_backend_with_spring_boot.service.CourseService;
 @RestController
 @RequestMapping("/api/courses")
 public class CourseController {
+
   @Autowired
-  private CourseService service;
+  private CourseService courseService;
 
-  @PostMapping
+  
+  @PostMapping("/add")
   public ResponseEntity<CourseResponseDTO> createCourse(@RequestBody CourseRequestDTO dto) {
-    return new ResponseEntity<>(service.createCourse(dto), HttpStatus.CREATED);
+    CourseResponseDTO response = courseService.createCourse(dto);
+    return ResponseEntity.status(201).body(response);
   }
 
-  @GetMapping
-  public List<CourseResponseDTO> getAllCourses() {
-    return service.getAllCourses();
+  // Get all courses
+  @GetMapping("/all")
+  public ResponseEntity<List<CourseResponseDTO>> getAllCourses() {
+    return ResponseEntity.ok(courseService.getAllCourses());
   }
 
+  // Get a specific course
   @GetMapping("/{courseId}")
-  public CourseResponseDTO getCourse(@PathVariable String courseId) {
-    return service.getCourse(courseId);
+  public ResponseEntity<CourseResponseDTO> getCourse(@PathVariable String courseId) {
+    return ResponseEntity.ok(courseService.getCourse(courseId));
   }
 
+  // Delete a course
   @DeleteMapping("/{courseId}")
   public ResponseEntity<Void> deleteCourse(@PathVariable String courseId) {
-    service.deleteCourse(courseId);
+    courseService.deleteCourse(courseId);
     return ResponseEntity.noContent().build();
   }
 }
