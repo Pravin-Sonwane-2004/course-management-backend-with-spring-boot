@@ -1,55 +1,47 @@
 package com.pravin.learnsphere_backend_with_spring_boot.controller;
 
-import java.util.ArrayList;
-import java.util.List;
+
+import com.pravin.learnsphere_backend_with_spring_boot.entity.Course;
+import com.pravin.learnsphere_backend_with_spring_boot.service.CourseService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import com.pravin.learnsphere_backend_with_spring_boot.dto.CourseRequestDTO;
-import com.pravin.learnsphere_backend_with_spring_boot.dto.CourseResponseDTO;
-import com.pravin.learnsphere_backend_with_spring_boot.service.CourseService;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/courses")
 public class CourseController {
+    private final CourseService courseService;
 
-  @Autowired
-  private CourseService courseService;
-
-  @PostMapping("/add/bulk")
-public ResponseEntity<List<CourseResponseDTO>> createCourses(@RequestBody List<CourseRequestDTO> courses) {
-    List<CourseResponseDTO> responseList = new ArrayList<>();
-    for (CourseRequestDTO dto : courses) {
-        CourseResponseDTO created = courseService.createCourse(dto);
-        responseList.add(created);
+    @Autowired
+    public CourseController(CourseService courseService) {
+        this.courseService = courseService;
     }
-    return ResponseEntity.status(201).body(responseList);
-}
 
-  @PostMapping("")
-  public ResponseEntity<CourseResponseDTO> createCourse(@RequestBody CourseRequestDTO dto) {
-    CourseResponseDTO response = courseService.createCourse(dto);
-    return ResponseEntity.status(201).body(response);
-  }
+    @PostMapping
+    public ResponseEntity<Course> createCourse(@RequestBody Course course) {
+        // TODO: Add validation and error handling
+        Course created = courseService.createCourse(course);
+        return ResponseEntity.ok(created);
+    }
 
-  // Get all courses
-  @GetMapping("")
-  public ResponseEntity<List<CourseResponseDTO>> getAllCourses() {
-    return ResponseEntity.ok(courseService.getAllCourses());
-  }
+    @GetMapping
+    public List<Course> getAllCourses() {
+        return courseService.getAllCourses();
+    }
 
-  // Get a specific course
-  @GetMapping("/{courseId}")
-  public ResponseEntity<CourseResponseDTO> getCourse(@PathVariable String courseId) {
-    return ResponseEntity.ok(courseService.getCourse(courseId));
-  }
+    @GetMapping("/{id}")
+    public ResponseEntity<Course> getCourseById(@PathVariable Long id) {
+        return courseService.getCourseById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 
-  // Delete a course
-  @DeleteMapping("/{courseId}")
-  public ResponseEntity<Void> deleteCourse(@PathVariable String courseId) {
-    courseService.deleteCourse(courseId);
-    return ResponseEntity.noContent().build();
-  }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
+        // TODO: Add dependency check and error handling
+        courseService.deleteCourse(id);
+        return ResponseEntity.noContent().build();
+    }
 }

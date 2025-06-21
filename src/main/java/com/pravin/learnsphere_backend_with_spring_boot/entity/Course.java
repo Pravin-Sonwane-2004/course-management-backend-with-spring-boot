@@ -1,34 +1,27 @@
 package com.pravin.learnsphere_backend_with_spring_boot.entity;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
+import jakarta.persistence.Column;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.JoinColumn;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
+@Table(name = "courses")
 public class Course {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
-    private String courseId; // e.g., CS 209
+    @Column(nullable = false, unique = true)
+    private String name;
 
-    @Column(nullable = false)
-    private String title;
-
-    @Column(length = 2000)
-    private String description;
-
-    // Prerequisites: self-referencing many-to-many
     @ManyToMany
     @JoinTable(
         name = "course_prerequisites",
@@ -37,19 +30,33 @@ public class Course {
     )
     private Set<Course> prerequisites = new HashSet<>();
 
-    // Getters and setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public Course() {}
 
-    public String getCourseId() { return courseId; }
-    public void setCourseId(String courseId) { this.courseId = courseId; }
+    public Course(String name) {
+        this.name = name;
+    }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-    public Set<Course> getPrerequisites() { return prerequisites; }
-    public void setPrerequisites(Set<Course> prerequisites) { this.prerequisites = prerequisites; }
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Set<Course> getPrerequisites() {
+        return prerequisites;
+    }
+
+    public void setPrerequisites(Set<Course> prerequisites) {
+        this.prerequisites = prerequisites;
+    }
 }

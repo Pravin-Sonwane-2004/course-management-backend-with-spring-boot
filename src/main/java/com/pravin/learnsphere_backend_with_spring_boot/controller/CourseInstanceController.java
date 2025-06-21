@@ -1,53 +1,50 @@
 package com.pravin.learnsphere_backend_with_spring_boot.controller;
 
-import java.util.List;
+
+import com.pravin.learnsphere_backend_with_spring_boot.entity.Course;
+import com.pravin.learnsphere_backend_with_spring_boot.entity.CourseInstance;
+import com.pravin.learnsphere_backend_with_spring_boot.service.CourseInstanceService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import com.pravin.learnsphere_backend_with_spring_boot.dto.InstanceRequestDTO;
-import com.pravin.learnsphere_backend_with_spring_boot.dto.InstanceResponseDTO;
-import com.pravin.learnsphere_backend_with_spring_boot.service.CourseInstanceService;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/instances")
 public class CourseInstanceController {
+    private final CourseInstanceService courseInstanceService;
 
-  @Autowired
-  private CourseInstanceService instanceService;
+    @Autowired
+    public CourseInstanceController(CourseInstanceService courseInstanceService) {
+        this.courseInstanceService = courseInstanceService;
+    }
 
-  // Create a course instance
-  @PostMapping
-  public ResponseEntity<InstanceResponseDTO> createInstance(@RequestBody InstanceRequestDTO dto) {
-    InstanceResponseDTO response = instanceService.createInstance(dto);
-    return ResponseEntity.status(201).body(response);
-  }
+    @PostMapping
+    public ResponseEntity<CourseInstance> createInstance(@RequestBody CourseInstance instance) {
+        // TODO: Add validation and error handling
+        CourseInstance created = courseInstanceService.createInstance(instance);
+        return ResponseEntity.ok(created);
+    }
 
-  // List all instances for year and semester
-  @GetMapping("/{year}/{semester}")
-  public ResponseEntity<List<InstanceResponseDTO>> listInstances(
-      @PathVariable int year,
-      @PathVariable int semester) {
-    return ResponseEntity.ok(instanceService.listInstances(year, semester));
-  }
+    @GetMapping("/{year}/{semester}")
+    public List<CourseInstance> getInstancesByYearAndSemester(@PathVariable int year, @PathVariable String semester) {
+        return courseInstanceService.getInstancesByYearAndSemester(year, semester);
+    }
 
-  // Get a specific course instance
-  @GetMapping("/{year}/{semester}/{courseId}")
-  public ResponseEntity<InstanceResponseDTO> getInstance(
-      @PathVariable int year,
-      @PathVariable int semester,
-      @PathVariable String courseId) {
-    return ResponseEntity.ok(instanceService.getInstance(year, semester, courseId));
-  }
+    @GetMapping("/{year}/{semester}/{id}")
+    public ResponseEntity<CourseInstance> getInstanceById(@PathVariable int year, @PathVariable String semester, @PathVariable Long id) {
+        // Optionally, validate year/semester match
+        return courseInstanceService.getInstanceById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 
-  // Delete a specific course instance
-  @DeleteMapping("/{year}/{semester}/{courseId}")
-  public ResponseEntity<Void> deleteInstance(
-      @PathVariable int year,
-      @PathVariable int semester,
-      @PathVariable String courseId) {
-    instanceService.deleteInstance(year, semester, courseId);
-    return ResponseEntity.noContent().build();
-  }
-}
+    @DeleteMapping("/{year}/{semester}/{id}")
+    public ResponseEntity<Void> deleteInstance(@PathVariable int year, @PathVariable String semester, @PathVariable Long id) {
+        // TODO: Add validation and error handling
+        courseInstanceService.deleteInstance(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    }
