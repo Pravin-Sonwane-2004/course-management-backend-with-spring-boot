@@ -26,7 +26,7 @@ public class CourseMapper {
     course.setCourseId(dto.getCourseId());
     course.setTitle(dto.getTitle());
     course.setDescription(dto.getDescription());
-    course.setPrerequisites(prerequisites);
+    course.setPrerequisites(new java.util.HashSet<>(prerequisites));
     return course;
   }
 }

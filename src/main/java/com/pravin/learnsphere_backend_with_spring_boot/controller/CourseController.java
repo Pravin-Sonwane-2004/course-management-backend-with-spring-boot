@@ -28,14 +28,14 @@ public ResponseEntity<List<CourseResponseDTO>> createCourses(@RequestBody List<C
     return ResponseEntity.status(201).body(responseList);
 }
 
-  @PostMapping("/add")
+  @PostMapping("")
   public ResponseEntity<CourseResponseDTO> createCourse(@RequestBody CourseRequestDTO dto) {
     CourseResponseDTO response = courseService.createCourse(dto);
     return ResponseEntity.status(201).body(response);
   }
 
   // Get all courses
-  @GetMapping("/all")
+  @GetMapping("")
   public ResponseEntity<List<CourseResponseDTO>> getAllCourses() {
     return ResponseEntity.ok(courseService.getAllCourses());
   }
