@@ -108,32 +108,31 @@ public class CourseService {
     course.setName(name);
     course.setDescription(description);
 
-    // Handle prerequisites if provided
-    if (prerequisites != null && !prerequisites.isEmpty()) {
-      for (String prereqId : prerequisites) {
-        Course prereq = courseRepository.findByCourseId(prereqId)
-            .orElseThrow(() -> new BadRequestException("Prerequisite course not found: " + prereqId));
-        course.addPrerequisite(prereq);
-      }
-    }
-
     // Save the course first to get its ID
     Course savedCourse = courseRepository.save(course);
 
-    // Prevent circular prerequisites
-    if (hasCircularPrerequisite(savedCourse)) {
-      throw new ConflictException("Circular prerequisite detected");
-    }
-
-    // If prerequisites are provided, save them after the course is saved
+    // Handle prerequisites if provided
     if (prerequisites != null && !prerequisites.isEmpty()) {
+      // First ensure all prerequisites exist
+      Set<Course> prereqCourses = new HashSet<>();
       for (String prereqId : prerequisites) {
-        Course prereq = courseRepository.findByCourseId(prereqId)
+        Course prereq = courseRepository.findByCourseIdWithPrerequisites(prereqId)
             .orElseThrow(() -> new BadRequestException("Prerequisite course not found: " + prereqId));
+        prereqCourses.add(prereq);
+      }
+
+      // Check for circular prerequisites before adding
+      if (hasCircularPrerequisite(savedCourse)) {
+        throw new ConflictException("Circular prerequisite detected");
+      }
+
+      // Add prerequisites to the saved course
+      for (Course prereq : prereqCourses) {
         savedCourse.addPrerequisite(prereq);
       }
-      // Save the course again to persist the prerequisites
-      return courseRepository.save(savedCourse);
+
+      // Save all changes with prerequisites
+      savedCourse = courseRepository.save(savedCourse);
     }
 
     return savedCourse;
@@ -151,7 +150,9 @@ public class CourseService {
           if (prereq.getCourseId().equals(course.getCourseId())) {
             return true;
           }
-          stack.push(prereq);
+          if (!visited.contains(prereq.getCourseId())) {
+            stack.push(prereq);
+          }
         }
       }
     }
@@ -160,24 +161,25 @@ public class CourseService {
 
   @Transactional
   public void deleteCourse(String courseId) {
-    Course course = courseRepository.findByCourseId(courseId)
+    Course course = courseRepository.findByCourseIdWithPrerequisites(courseId)
         .orElseThrow(() -> new NotFoundException("Course not found: courseId=" + courseId));
 
-    // Check if course is used in any instances
-    if (course.getInstances().size() > 0) {
-      throw new BadRequestException("Cannot delete course as it is being used in course instances");
+    // First remove this course as a prerequisite from other courses
+    for (Course other : courseRepository.findAll()) {
+      other.getPrerequisites().remove(course);
     }
 
-    // Check if course is a prerequisite for any other courses
-    List<Course> dependentCourses = courseRepository.findAll().stream()
-        .filter(c -> c.getPrerequisites().contains(course))
-        .collect(Collectors.toList());
+    // Then remove all prerequisites from this course
+    course.getPrerequisites().clear();
 
-    if (!dependentCourses.isEmpty()) {
-      throw new BadRequestException("Cannot delete course as it is a prerequisite for other courses: " +
-          dependentCourses.stream().map(Course::getName).collect(Collectors.joining(", ")));
+    // Remove any course instances associated with this course
+    if (course.getInstances() != null) {
+      course.getInstances().forEach(instance -> {
+        course.removeInstance(instance);
+      });
     }
 
+    // Finally delete the course
     courseRepository.delete(course);
   }
 

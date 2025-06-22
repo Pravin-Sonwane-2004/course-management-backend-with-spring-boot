@@ -27,7 +27,7 @@ public class Course {
     @Column(length = 1000)
     private String description;
 
-    @ManyToMany
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
         name = "course_prerequisites",
         joinColumns = @JoinColumn(name = "course_id"),
@@ -41,8 +41,10 @@ public class Course {
     private Set<CourseInstance> instances = new HashSet<>();
 
     public void addPrerequisite(Course prerequisite) {
-        prerequisites.add(prerequisite);
-        prerequisite.getPrerequisites().add(this);
+        if (!prerequisites.contains(prerequisite)) {
+            prerequisites.add(prerequisite);
+            prerequisite.getPrerequisites().add(this);
+        }
     }
 
     public void removePrerequisite(Course prerequisite) {

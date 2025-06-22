@@ -66,12 +66,10 @@ public class CourseInstanceService {
         CourseInstance instance = courseInstanceRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Course instance not found: id=" + id));
         
-        // Check if instance has any dependencies before deletion
-        if (instance.getCourse().getInstances().stream()
-                .anyMatch(i -> i.getId().equals(id))) {
-            throw new BadRequestException("Cannot delete course instance as it is still in use");
-        }
+        // Remove instance from course's instances set
+        instance.getCourse().getInstances().remove(instance);
         
+        // Delete the instance
         courseInstanceRepository.deleteById(id);
     }
 

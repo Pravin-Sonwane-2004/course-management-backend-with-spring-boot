@@ -54,20 +54,17 @@ public class CourseController {
             
             List<CourseResponseDTO> response = courses.stream()
                 .map(course -> {
-                    Set<String> prereqIds = new HashSet<>();
-                    if (course.getPrerequisites() != null) {
-                        course.getPrerequisites().forEach(prereq -> {
-                            if (prereq != null) {
-                                prereqIds.add(prereq.getCourseId());
-                            }
-                        });
-                    }
-                    return CourseResponseDTO.builder()
-                        .courseId(course.getCourseId())
-                        .name(course.getName())
-                        .description(course.getDescription())
-                        .prerequisites(prereqIds)
-                        .build();
+                    Set<String> prereqIds = course.getPrerequisites() != null 
+                        ? course.getPrerequisites().stream()
+                            .map(Course::getCourseId)
+                            .collect(Collectors.toSet())
+                        : Collections.emptySet();
+                    return new CourseResponseDTO(
+                        course.getCourseId(),
+                        course.getName(),
+                        course.getDescription(),
+                        prereqIds
+                    );
                 })
                 .collect(Collectors.toList());
             
