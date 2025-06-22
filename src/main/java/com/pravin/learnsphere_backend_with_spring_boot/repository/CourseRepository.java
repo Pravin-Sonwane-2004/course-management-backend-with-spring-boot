@@ -19,8 +19,9 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     Optional<Course> findByIdWithPrerequisites(Long id);
     
     @Query("SELECT c FROM Course c " +
-           "LEFT JOIN FETCH c.prerequisites " +
-           "LEFT JOIN FETCH c.instances")
+            "LEFT JOIN FETCH c.prerequisites p " +
+            "LEFT JOIN FETCH c.instances " +
+            "WHERE c.id = c.id")
     List<Course> findAllWithDetails();
     
     @Query("SELECT c FROM Course c " +
