@@ -1,16 +1,17 @@
 package com.pravin.learnsphere_backend_with_spring_boot.service;
 
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.annotation.PostConstruct;
 
 import com.pravin.learnsphere_backend_with_spring_boot.entity.Course;
 import com.pravin.learnsphere_backend_with_spring_boot.exception.ConflictException;
@@ -30,55 +31,104 @@ public class CourseService {
         this.courseInstanceRepository = courseInstanceRepository;
     }
 
+    @PostConstruct
+    public void initializeTestCourses() {
+        // Create test courses with prerequisites
+        createTestCourse("CS101", "Introduction to Computer Science", "Basic concepts of computer science");
+        createTestCourse("CS102", "Data Structures", "Fundamental data structures and algorithms");
+        createTestCourse("CS201", "Algorithms", "Advanced algorithms and analysis", Set.of("CS102"));
+        createTestCourse("CS202", "Operating Systems", "Computer operating systems", Set.of("CS101", "CS102"));
+        createTestCourse("CS301", "Database Systems", "Database management systems");
+        createTestCourse("CS302", "Computer Networks", "Computer networking concepts", Set.of("CS202"));
+    }
+
+    private void createTestCourse(String courseId, String name, String description, Set<String> prerequisites) {
+        try {
+            createCourse(courseId, name, description);
+        } catch (Exception e) {
+            System.out.println("Failed to create test course " + courseId + ": " + e.getMessage());
+        }
+    }
+
+    private void createTestCourse(String courseId, String name, String description) {
+        createTestCourse(courseId, name, description, null);
+    }
+
     public List<Course> getAllCourses() {
-        return courseRepository.findAll();
+        return courseRepository.findAllWithDetails();
     }
 
     public Optional<Course> getCourseById(Long id) {
-        return courseRepository.findById(id);
+        return courseRepository.findByIdWithPrerequisites(id);
+    }
+
+    public Optional<Course> getCourseByCourseId(String courseId) {
+        return courseRepository.findByCourseIdWithPrerequisites(courseId);
     }
 
     @Transactional
-    public Course createCourse(Course course) {
-        // Validate name
-        if (course.getName() == null || course.getName().trim().isEmpty()) {
+    public Course createCourse(String courseId, String name, String description) {
+        return createCourse(courseId, name, description, null);
+    }
+
+    @Transactional
+    public Course createCourse(String courseId, String name, String description, Set<String> prerequisites) {
+        // Validate inputs
+        if (name == null || name.trim().isEmpty()) {
             throw new BadRequestException("Course name is required");
         }
+        if (courseId == null || courseId.trim().isEmpty()) {
+            throw new BadRequestException("Course ID is required");
+        }
+        
+        // Check for duplicate courseId
+        if (courseRepository.findByCourseId(courseId).isPresent()) {
+            throw new ConflictException("Course with this ID already exists");
+        }
+        
         // Check for duplicate name
-        if (courseRepository.findByName(course.getName()).isPresent()) {
+        if (courseRepository.findAll().stream()
+                .anyMatch(c -> name.equals(c.getName()))) {
             throw new ConflictException("Course with this name already exists");
         }
-        // Validate prerequisites
-        Set<Course> validPrereqs = new HashSet<>();
-        if (course.getPrerequisites() != null) {
-            for (Course prereq : course.getPrerequisites()) {
-                Course found = courseRepository.findById(prereq.getId())
-                        .orElseThrow(() -> new BadRequestException("Prerequisite course not found: id=" + prereq.getId()));
-                validPrereqs.add(found);
+        
+        // Create new course
+        Course course = new Course();
+        course.setCourseId(courseId);
+        course.setName(name);
+        course.setDescription(description);
+        
+        // Add prerequisites
+        if (prerequisites != null) {
+            for (String prereqId : prerequisites) {
+                Course prereq = courseRepository.findByCourseId(prereqId)
+                    .orElseThrow(() -> new BadRequestException("Prerequisite course not found: " + prereqId));
+                course.addPrerequisite(prereq);
             }
         }
-        // Prevent self-reference
-        if (validPrereqs.stream().anyMatch(pr -> pr.getName().equals(course.getName()))) {
-            throw new ConflictException("A course cannot be its own prerequisite");
-        }
+        
         // Prevent circular prerequisites
-        if (hasCircularPrerequisite(course.getName(), validPrereqs)) {
+        if (hasCircularPrerequisite(course)) {
             throw new ConflictException("Circular prerequisite detected");
         }
-        course.setPrerequisites(validPrereqs);
+        
         return courseRepository.save(course);
     }
 
-    private boolean hasCircularPrerequisite(String courseName, Set<Course> prereqs) {
+    private boolean hasCircularPrerequisite(Course course) {
         Set<String> visited = new HashSet<>();
-        Deque<Course> stack = new ArrayDeque<>(prereqs);
+        Deque<Course> stack = new ArrayDeque<>();
+        stack.push(course);
+        
         while (!stack.isEmpty()) {
             Course current = stack.pop();
-            if (current.getName().equals(courseName)) {
-                return true;
-            }
-            if (visited.add(current.getName()) && current.getPrerequisites() != null) {
-                stack.addAll(current.getPrerequisites());
+            if (visited.add(current.getCourseId())) {
+                for (Course prereq : current.getPrerequisites()) {
+                    if (prereq.getCourseId().equals(course.getCourseId())) {
+                        return true;
+                    }
+                    stack.push(prereq);
+                }
             }
         }
         return false;
@@ -88,13 +138,79 @@ public class CourseService {
     public void deleteCourse(Long id) {
         Course course = courseRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Course not found: id=" + id));
-        // Check if this course is a prerequisite for any other course
-        List<Course> allCourses = courseRepository.findAll();
-        for (Course c : allCourses) {
-            if (c.getPrerequisites() != null && c.getPrerequisites().stream().anyMatch(pr -> pr.getId().equals(id))) {
-                throw new ConflictException("Cannot delete course: it is a prerequisite for another course");
-            }
+        
+        // Check if course is used in any instances
+        if (course.getInstances().size() > 0) {
+            throw new BadRequestException("Cannot delete course as it is being used in course instances");
         }
-        courseRepository.deleteById(id);
+        
+        // Check if course is a prerequisite for any other courses
+        List<Course> dependentCourses = courseRepository.findAll().stream()
+            .filter(c -> c.getPrerequisites().contains(course))
+            .collect(Collectors.toList());
+        
+        if (!dependentCourses.isEmpty()) {
+            throw new BadRequestException("Cannot delete course as it is a prerequisite for other courses: " +
+                dependentCourses.stream().map(Course::getName).collect(Collectors.joining(", ")));
+        }
+        
+        courseRepository.delete(course);
+    }
+
+    public void testCourseOperations() {
+        try {
+            // Test creating a course with prerequisites
+            System.out.println("\nTesting course creation with prerequisites...");
+            Course newCourse = createCourse("CS401", "Software Engineering", "Principles of software engineering");
+            System.out.println("Created course: " + newCourse.getName());
+            
+            // Test circular prerequisite detection
+            System.out.println("\nTesting circular prerequisites...");
+            try {
+                createCourse("CS402", "Advanced SE", "Advanced software engineering");
+                System.out.println("Circular prerequisite test failed - should have thrown exception");
+            } catch (ConflictException e) {
+                System.out.println("Circular prerequisite test passed: " + e.getMessage());
+            }
+            
+            // Test duplicate course creation
+            System.out.println("\nTesting duplicate course...");
+            try {
+                createCourse("CS401", "Another Course", "Duplicate test");
+                System.out.println("Duplicate course test failed - should have thrown exception");
+            } catch (ConflictException e) {
+                System.out.println("Duplicate course test passed: " + e.getMessage());
+            }
+            
+            // Test course deletion with prerequisites
+            System.out.println("\nTesting course deletion with prerequisites...");
+            try {
+                Optional<Course> cs101 = getCourseByCourseId("CS101");
+                if (cs101.isPresent()) {
+                    deleteCourse(cs101.get().getId());
+                    System.out.println("Course deletion test failed - should have thrown exception");
+                }
+            } catch (BadRequestException e) {
+                System.out.println("Course deletion test passed: " + e.getMessage());
+            }
+            
+            // Test successful course deletion
+            System.out.println("\nTesting successful course deletion...");
+            Optional<Course> cs401 = getCourseByCourseId("CS401");
+            if (cs401.isPresent()) {
+                deleteCourse(cs401.get().getId());
+                System.out.println("Successfully deleted course: CS401");
+            }
+            
+            // List all courses
+            System.out.println("\nAll courses:");
+            getAllCourses().forEach(course -> 
+                System.out.println(course.getCourseId() + " - " + course.getName() + " (Prerequisites: " + 
+                    course.getPrerequisites().stream().map(c -> c.getCourseId()).collect(Collectors.joining(", ")) + ")")
+            );
+            
+        } catch (Exception e) {
+            System.err.println("Test failed: " + e.getMessage());
+        }
     }
 }

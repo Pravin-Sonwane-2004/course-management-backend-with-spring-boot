@@ -1,26 +1,28 @@
 package com.pravin.learnsphere_backend_with_spring_boot.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Column;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.JoinColumn;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Table(name = "courses")
+@Getter
+@Setter
 public class Course {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, unique = true)
+    private String courseId;
+
+    @Column(nullable = false)
     private String name;
+
+    @Column(length = 1000)
+    private String description;
 
     @ManyToMany
     @JoinTable(
@@ -30,33 +32,26 @@ public class Course {
     )
     private Set<Course> prerequisites = new HashSet<>();
 
-    public Course() {}
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<CourseInstance> instances = new HashSet<>();
 
-    public Course(String name) {
-        this.name = name;
+    public void addPrerequisite(Course prerequisite) {
+        prerequisites.add(prerequisite);
+        prerequisite.getPrerequisites().remove(this);
     }
 
-    public Long getId() {
-        return id;
+    public void removePrerequisite(Course prerequisite) {
+        prerequisites.remove(prerequisite);
+        prerequisite.getPrerequisites().remove(this);
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void addInstance(CourseInstance instance) {
+        instances.add(instance);
+        instance.setCourse(this);
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Set<Course> getPrerequisites() {
-        return prerequisites;
-    }
-
-    public void setPrerequisites(Set<Course> prerequisites) {
-        this.prerequisites = prerequisites;
+    public void removeInstance(CourseInstance instance) {
+        instances.remove(instance);
+        instance.setCourse(null);
     }
 }

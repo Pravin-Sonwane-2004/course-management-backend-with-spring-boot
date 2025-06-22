@@ -1,7 +1,6 @@
 package com.pravin.learnsphere_backend_with_spring_boot.controller;
 
-
-import com.pravin.learnsphere_backend_with_spring_boot.entity.Course;
+import com.pravin.learnsphere_backend_with_spring_boot.dto.CourseInstanceDTO;
 import com.pravin.learnsphere_backend_with_spring_boot.entity.CourseInstance;
 import com.pravin.learnsphere_backend_with_spring_boot.service.CourseInstanceService;
 
@@ -21,30 +20,30 @@ public class CourseInstanceController {
     }
 
     @PostMapping
-    public ResponseEntity<CourseInstance> createInstance(@RequestBody CourseInstance instance) {
-        // TODO: Add validation and error handling
-        CourseInstance created = courseInstanceService.createInstance(instance);
+    public ResponseEntity<CourseInstance> createInstance(@RequestBody CourseInstanceDTO dto) {
+        CourseInstance created = courseInstanceService.createInstance(
+            dto.getCourseId(), 
+            dto.getYear(), 
+            dto.getSemester()
+        );
         return ResponseEntity.ok(created);
     }
 
     @GetMapping("/{year}/{semester}")
-    public List<CourseInstance> getInstancesByYearAndSemester(@PathVariable int year, @PathVariable String semester) {
+    public List<CourseInstance> getInstancesByYearAndSemester(@PathVariable int year, @PathVariable int semester) {
         return courseInstanceService.getInstancesByYearAndSemester(year, semester);
     }
 
-    @GetMapping("/{year}/{semester}/{id}")
-    public ResponseEntity<CourseInstance> getInstanceById(@PathVariable int year, @PathVariable String semester, @PathVariable Long id) {
-        // Optionally, validate year/semester match
-        return courseInstanceService.getInstanceById(id)
+    @GetMapping("/{year}/{semester}/{courseId}")
+    public ResponseEntity<CourseInstance> getInstanceByCourseId(@PathVariable int year, @PathVariable int semester, @PathVariable String courseId) {
+        return courseInstanceService.getInstanceByCourseIdAndYearAndSemester(courseId, year, semester)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping("/{year}/{semester}/{id}")
-    public ResponseEntity<Void> deleteInstance(@PathVariable int year, @PathVariable String semester, @PathVariable Long id) {
-        // TODO: Add validation and error handling
-        courseInstanceService.deleteInstance(id);
+    @DeleteMapping("/{year}/{semester}/{courseId}")
+    public ResponseEntity<Void> deleteInstance(@PathVariable int year, @PathVariable int semester, @PathVariable String courseId) {
+        courseInstanceService.deleteInstanceByCourseIdAndYearAndSemester(courseId, year, semester);
         return ResponseEntity.noContent().build();
     }
-
-    }
+}

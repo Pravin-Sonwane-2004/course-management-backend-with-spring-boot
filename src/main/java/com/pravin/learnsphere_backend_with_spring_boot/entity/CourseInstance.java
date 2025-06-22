@@ -1,68 +1,51 @@
 package com.pravin.learnsphere_backend_with_spring_boot.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Column;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.JoinColumn;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import java.util.Objects;
 
 @Entity
 @Table(name = "course_instances")
+@Getter
+@Setter
 public class CourseInstance {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "course_id")
+    @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
     @Column(nullable = false)
     private int year;
 
     @Column(nullable = false)
-    private String semester;
+    private int semester;
+
+    @Column(nullable = false, unique = true)
+    private String instanceId;
 
     public CourseInstance() {}
 
-    public CourseInstance(Course course, int year, String semester) {
+    public CourseInstance(Course course, int year, int semester) {
         this.course = course;
         this.year = year;
         this.semester = semester;
+        this.instanceId = String.format("%s-%d-%d", course.getCourseId(), year, semester);
     }
 
-    public Long getId() {
-        return id;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CourseInstance that = (CourseInstance) o;
+        return Objects.equals(instanceId, that.instanceId);
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Course getCourse() {
-        return course;
-    }
-
-    public void setCourse(Course course) {
-        this.course = course;
-    }
-
-    public int getYear() {
-        return year;
-    }
-
-    public void setYear(int year) {
-        this.year = year;
-    }
-
-    public String getSemester() {
-        return semester;
-    }
-
-    public void setSemester(String semester) {
-        this.semester = semester;
+    @Override
+    public int hashCode() {
+        return Objects.hash(instanceId);
     }
 }

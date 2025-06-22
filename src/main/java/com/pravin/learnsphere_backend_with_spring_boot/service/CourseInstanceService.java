@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.pravin.learnsphere_backend_with_spring_boot.controller.CourseInstanceController;
 import com.pravin.learnsphere_backend_with_spring_boot.entity.Course;
 import com.pravin.learnsphere_backend_with_spring_boot.entity.CourseInstance;
 import com.pravin.learnsphere_backend_with_spring_boot.exceptions.BadRequestException;
@@ -26,7 +25,7 @@ public class CourseInstanceService {
         this.courseRepository = courseRepository;
     }
 
-    public List<CourseInstance> getInstancesByYearAndSemester(int year, String semester) {
+    public List<CourseInstance> getInstancesByYearAndSemester(int year, int semester) {
         return courseInstanceRepository.findByYearAndSemester(year, semester);
     }
 
@@ -34,26 +33,27 @@ public class CourseInstanceService {
         return courseInstanceRepository.findById(id);
     }
 
+    public Optional<CourseInstance> getInstanceByCourseIdAndYearAndSemester(String courseId, int year, int semester) {
+        return courseInstanceRepository.findByCourseIdAndYearAndSemester(courseId, year, semester);
+    }
+
     @Transactional
-    public CourseInstance createInstance(CourseInstance instance) {
+    public CourseInstance createInstance(String courseId, int year, int semester) {
         // Validate year and semester
-        if (instance.getYear() <= 0 || instance.getSemester() == null || instance.getSemester().trim().isEmpty()) {
-            throw new BadRequestException("Year and semester are required");
+        if (year <= 0 || semester <= 0 || semester > 2) {
+            throw new BadRequestException("Invalid year or semester value");
         }
         // Validate course exists
-        if (instance.getCourse() == null || instance.getCourse().getId() == null) {
-            throw new BadRequestException("Course ID is required for instance");
-        }
-        Course course = courseRepository.findById(instance.getCourse().getId())
-                .orElseThrow(() -> new NotFoundException("Course not found: id=" + instance.getCourse().getId()));
-        instance.setCourse(course);
-        // Check for duplicate instance (same course, year, semester)
-        boolean exists = courseInstanceRepository.findByYearAndSemester(instance.getYear(), instance.getSemester())
-            .stream()
-            .anyMatch(ci -> ci.getCourse().getId().equals(instance.getCourse().getId()));
-        if (exists) {
+        Course course = courseRepository.findByCourseId(courseId)
+                .orElseThrow(() -> new NotFoundException("Course not found: " + courseId));
+        
+        // Check for duplicate instance
+        if (courseInstanceRepository.findByCourseIdAndYearAndSemester(courseId, year, semester).isPresent()) {
             throw new BadRequestException("Course instance already exists for this course, year, and semester");
         }
+        
+        // Create new instance
+        CourseInstance instance = new CourseInstance(course, year, semester);
         return courseInstanceRepository.save(instance);
     }
 
@@ -61,7 +61,21 @@ public class CourseInstanceService {
     public void deleteInstance(Long id) {
         CourseInstance instance = courseInstanceRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Course instance not found: id=" + id));
-        // Add any dependency checks here if needed before deletion
+        
+        // Check if instance has any dependencies before deletion
+        if (instance.getCourse().getInstances().stream()
+                .anyMatch(i -> i.getId().equals(id))) {
+            throw new BadRequestException("Cannot delete course instance as it is still in use");
+        }
+        
         courseInstanceRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void deleteInstanceByCourseIdAndYearAndSemester(String courseId, int year, int semester) {
+        Optional<CourseInstance> instance = courseInstanceRepository.findByCourseIdAndYearAndSemester(courseId, year, semester);
+        if (instance.isPresent()) {
+            deleteInstance(instance.get().getId());
+        }
     }
 }
