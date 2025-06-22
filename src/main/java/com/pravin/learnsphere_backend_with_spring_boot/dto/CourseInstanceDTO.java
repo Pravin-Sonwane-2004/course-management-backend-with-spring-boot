@@ -1,10 +1,17 @@
 package com.pravin.learnsphere_backend_with_spring_boot.dto;
 
 public class CourseInstanceDTO {
+    private String instanceId;
     private String courseId;
     private Integer year;
     private Integer semester;
 
+    public String getInstanceId() {
+        return instanceId;
+    }
+    public void setInstanceId(String instanceId) {
+        this.instanceId = instanceId;
+    }
     public String getCourseId() {
         return courseId;
     }

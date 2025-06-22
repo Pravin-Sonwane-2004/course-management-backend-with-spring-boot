@@ -55,7 +55,17 @@ public class CourseService {
     }
 
     public List<Course> getAllCourses() {
-        return courseRepository.findAllWithDetails();
+        List<Course> courses = courseRepository.findAllWithDetails();
+        // Process prerequisites to ensure they are properly fetched
+        courses.forEach(course -> {
+            if (course.getPrerequisites() != null) {
+                course.getPrerequisites().forEach(prereq -> {
+                    // Ensure prerequisites are fully loaded
+                    prereq.getCourseId();
+                });
+            }
+        });
+        return courses;
     }
 
     public Optional<Course> getCourseById(Long id) {

@@ -1,12 +1,17 @@
 package com.pravin.learnsphere_backend_with_spring_boot.controller;
 
 import com.pravin.learnsphere_backend_with_spring_boot.dto.CourseDTO;
+import com.pravin.learnsphere_backend_with_spring_boot.dto.CourseResponseDTO;
 import com.pravin.learnsphere_backend_with_spring_boot.entity.Course;
 import com.pravin.learnsphere_backend_with_spring_boot.service.CourseService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import java.util.HashSet;
 import java.util.List;
@@ -35,9 +40,32 @@ public class CourseController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Course>> getAllCourses() {
-        List<Course> courses = courseService.getAllCourses();
-        return ResponseEntity.ok(courses);
+    public ResponseEntity<List<CourseResponseDTO>> getAllCourses() {
+        try {
+            List<Course> courses = courseService.getAllCourses();
+            if (courses == null) {
+                return ResponseEntity.ok(Collections.emptyList());
+            }
+            
+            List<CourseResponseDTO> response = courses.stream()
+                .map(course -> CourseResponseDTO.builder()
+                    .courseId(course.getCourseId())
+                    .title(course.getName())
+                    .description(course.getDescription())
+                    .prerequisites(course.getPrerequisites() != null 
+                        ? course.getPrerequisites().stream()
+                            .map(prereq -> prereq.getCourseId())
+                            .toList()
+                        : Collections.emptyList())
+                    .build())
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace(); // Log the error for debugging
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Collections.emptyList());
+        }
     }
 
     @GetMapping("/combined")

@@ -30,8 +30,19 @@ public class CourseInstanceController {
     }
 
     @GetMapping("/{year}/{semester}")
-    public List<CourseInstance> getInstancesByYearAndSemester(@PathVariable int year, @PathVariable int semester) {
-        return courseInstanceService.getInstancesByYearAndSemester(year, semester);
+    public CourseInstanceDTO[] getInstancesByYearAndSemester(@PathVariable int year, @PathVariable int semester) {
+        List<CourseInstance> instances = courseInstanceService.getInstancesByYearAndSemester(year, semester);
+        CourseInstanceDTO[] dtos = new CourseInstanceDTO[instances.size()];
+        int index = 0;
+        for (CourseInstance instance : instances) {
+            CourseInstanceDTO dto = new CourseInstanceDTO();
+            dto.setInstanceId(instance.getInstanceId());
+            dto.setCourseId(instance.getCourse().getCourseId());
+            dto.setYear(instance.getYear());
+            dto.setSemester(instance.getSemester());
+            dtos[index++] = dto;
+        }
+        return dtos;
     }
 
     @GetMapping
