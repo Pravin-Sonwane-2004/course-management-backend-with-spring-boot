@@ -98,6 +98,16 @@ public class CourseService {
         course.setName(name);
         course.setDescription(description);
         
+        // Handle prerequisites if provided
+        if (prerequisites != null && !prerequisites.isEmpty()) {
+            prerequisites.forEach(prereqId -> {
+                Optional<Course> prereq = courseRepository.findByCourseId(prereqId);
+                if (prereq.isPresent()) {
+                    course.addPrerequisite(prereq.get());
+                }
+            });
+        }
+        
         // Add prerequisites
         if (prerequisites != null) {
             for (String prereqId : prerequisites) {

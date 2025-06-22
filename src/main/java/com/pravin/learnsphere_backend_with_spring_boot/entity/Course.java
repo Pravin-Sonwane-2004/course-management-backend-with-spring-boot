@@ -3,6 +3,8 @@ package com.pravin.learnsphere_backend_with_spring_boot.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,9 +32,11 @@ public class Course {
         joinColumns = @JoinColumn(name = "course_id"),
         inverseJoinColumns = @JoinColumn(name = "prerequisite_id")
     )
+    @JsonManagedReference
     private Set<Course> prerequisites = new HashSet<>();
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonBackReference
     private Set<CourseInstance> instances = new HashSet<>();
 
     public void addPrerequisite(Course prerequisite) {

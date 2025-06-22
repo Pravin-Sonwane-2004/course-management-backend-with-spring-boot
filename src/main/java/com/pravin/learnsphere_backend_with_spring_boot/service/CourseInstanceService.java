@@ -37,6 +37,10 @@ public class CourseInstanceService {
         return courseInstanceRepository.findByCourseIdAndYearAndSemester(courseId, year, semester);
     }
 
+    public List<CourseInstance> getAllInstances() {
+        return courseInstanceRepository.findAll();
+    }
+
     @Transactional
     public CourseInstance createInstance(String courseId, int year, int semester) {
         // Validate year and semester

@@ -3,6 +3,7 @@ package com.pravin.learnsphere_backend_with_spring_boot.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import java.util.Objects;
 
 @Entity
@@ -16,6 +17,7 @@ public class CourseInstance {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "course_id", nullable = false)
+    @JsonBackReference
     private Course course;
 
     @Column(nullable = false)

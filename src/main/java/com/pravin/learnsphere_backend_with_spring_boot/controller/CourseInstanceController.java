@@ -34,6 +34,11 @@ public class CourseInstanceController {
         return courseInstanceService.getInstancesByYearAndSemester(year, semester);
     }
 
+    @GetMapping
+    public List<CourseInstance> getAllInstances() {
+        return courseInstanceService.getAllInstances();
+    }
+
     @GetMapping("/{year}/{semester}/{courseId}")
     public ResponseEntity<CourseInstance> getInstanceByCourseId(@PathVariable int year, @PathVariable int semester, @PathVariable String courseId) {
         return courseInstanceService.getInstanceByCourseIdAndYearAndSemester(courseId, year, semester)
