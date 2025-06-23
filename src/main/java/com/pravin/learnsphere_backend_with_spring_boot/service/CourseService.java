@@ -8,19 +8,23 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 
 import com.pravin.learnsphere_backend_with_spring_boot.entity.Course;
+import com.pravin.learnsphere_backend_with_spring_boot.exception.BadRequestException;
 import com.pravin.learnsphere_backend_with_spring_boot.exception.ConflictException;
-import com.pravin.learnsphere_backend_with_spring_boot.exceptions.BadRequestException;
-import com.pravin.learnsphere_backend_with_spring_boot.exceptions.NotFoundException;
+import com.pravin.learnsphere_backend_with_spring_boot.exception.NotFoundException;
 import com.pravin.learnsphere_backend_with_spring_boot.repository.CourseInstanceRepository;
 import com.pravin.learnsphere_backend_with_spring_boot.repository.CourseRepository;
 
 @Service
+@Slf4j
 public class CourseService {
   private final CourseRepository courseRepository;
   private final CourseInstanceRepository courseInstanceRepository;
@@ -33,20 +37,22 @@ public class CourseService {
 
   @PostConstruct
   public void initializeTestCourses() {
-    // Create test courses with prerequisites
+    log.info("Initializing test courses...");
     createTestCourse("CS101", "Introduction to Computer Science", "Basic concepts of computer science");
     createTestCourse("CS102", "Data Structures", "Fundamental data structures and algorithms");
     createTestCourse("CS201", "Algorithms", "Advanced algorithms and analysis", Set.of("CS102"));
     createTestCourse("CS202", "Operating Systems", "Computer operating systems", Set.of("CS101", "CS102"));
     createTestCourse("CS301", "Database Systems", "Database management systems");
     createTestCourse("CS302", "Computer Networks", "Computer networking concepts", Set.of("CS202"));
+    log.info("Test courses initialized successfully");
   }
 
   private void createTestCourse(String courseId, String name, String description, Set<String> prerequisites) {
     try {
-      createCourse(courseId, name, description);
+      createCourse(courseId, name, description, prerequisites);
+      log.info("Successfully created test course: {}", courseId);
     } catch (Exception e) {
-      System.out.println("Failed to create test course " + courseId + ": " + e.getMessage());
+      log.error("Failed to create test course {}: {}", courseId, e.getMessage());
     }
   }
 
@@ -56,13 +62,9 @@ public class CourseService {
 
   public List<Course> getAllCourses() {
     List<Course> courses = courseRepository.findAllWithDetails();
-    // Process prerequisites to ensure they are properly fetched
     courses.forEach(course -> {
       if (course.getPrerequisites() != null) {
-        course.getPrerequisites().forEach(prereq -> {
-          // Ensure prerequisites are fully loaded
-          prereq.getCourseId();
-        });
+        course.getPrerequisites().forEach(prereq -> prereq.getCourseId());
       }
     });
     return courses;
@@ -161,26 +163,42 @@ public class CourseService {
 
   @Transactional
   public void deleteCourse(String courseId) {
-    Course course = courseRepository.findByCourseIdWithPrerequisites(courseId)
-        .orElseThrow(() -> new NotFoundException("Course not found: courseId=" + courseId));
-
-    // First remove this course as a prerequisite from other courses
-    for (Course other : courseRepository.findAll()) {
-      other.getPrerequisites().remove(course);
+    if (courseId == null || courseId.trim().isEmpty()) {
+      throw new BadRequestException("Course ID cannot be null or empty");
     }
 
-    // Then remove all prerequisites from this course
-    course.getPrerequisites().clear();
+    log.info("Attempting to delete course with ID: {}", courseId);
+    
+    try {
+      Course course = courseRepository.findByCourseIdWithPrerequisites(courseId)
+          .orElseThrow(() -> new NotFoundException("Course not found with ID: " + courseId));
 
-    // Remove any course instances associated with this course
-    if (course.getInstances() != null) {
-      course.getInstances().forEach(instance -> {
-        course.removeInstance(instance);
+      // Check if course has active instances
+      if (course.getInstances() != null && !course.getInstances().isEmpty()) {
+        throw new ConflictException("Cannot delete course with active instances");
+      }
+
+      // Remove this course as a prerequisite from other courses
+      courseRepository.findAll().forEach(other -> {
+        if (other.getPrerequisites() != null) {
+          other.getPrerequisites().remove(course);
+        }
       });
-    }
 
-    // Finally delete the course
-    courseRepository.delete(course);
+      // Remove all prerequisites from this course
+      if (course.getPrerequisites() != null) {
+        course.getPrerequisites().clear();
+      }
+
+      courseRepository.delete(course);
+      log.info("Successfully deleted course: {}", courseId);
+    } catch (NotFoundException e) {
+      log.warn("Attempted to delete non-existent course: {}", courseId);
+      throw e;
+    } catch (Exception e) {
+      log.error("Error deleting course {}: {}", courseId, e.getMessage());
+      throw new RuntimeException("Failed to delete course", e);
+    }
   }
 
   public void testCourseOperations() {

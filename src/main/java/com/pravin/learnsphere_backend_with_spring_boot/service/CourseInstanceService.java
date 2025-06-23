@@ -9,8 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.pravin.learnsphere_backend_with_spring_boot.entity.Course;
 import com.pravin.learnsphere_backend_with_spring_boot.entity.CourseInstance;
-import com.pravin.learnsphere_backend_with_spring_boot.exceptions.BadRequestException;
-import com.pravin.learnsphere_backend_with_spring_boot.exceptions.NotFoundException;
+import com.pravin.learnsphere_backend_with_spring_boot.exception.BadRequestException;
+import com.pravin.learnsphere_backend_with_spring_boot.exception.NotFoundException;
 import com.pravin.learnsphere_backend_with_spring_boot.repository.CourseInstanceRepository;
 import com.pravin.learnsphere_backend_with_spring_boot.repository.CourseRepository;
 
