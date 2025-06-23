@@ -14,8 +14,12 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 public class LegacyCourseController {
+    private final CourseService courseService;
+
     @Autowired
-    private CourseService courseService;
+    public LegacyCourseController(CourseService courseService) {
+        this.courseService = courseService;
+    }
 
     @GetMapping("/get-all-courses")
     public ResponseEntity<List<Course>> getAllCoursesLegacy() {

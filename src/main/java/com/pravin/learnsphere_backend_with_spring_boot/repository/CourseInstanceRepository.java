@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.pravin.learnsphere_backend_with_spring_boot.entity.CourseInstance;
+import com.pravin.learnsphere_backend_with_spring_boot.entity.Course;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +15,12 @@ public interface CourseInstanceRepository extends JpaRepository<CourseInstance, 
     @Query("SELECT ci FROM CourseInstance ci " +
            "WHERE ci.year = :year AND ci.semester = :semester")
     List<CourseInstance> findByYearAndSemester(int year, int semester);
+
+    @Query("SELECT ci FROM CourseInstance ci " +
+           "JOIN FETCH ci.course")
+    List<CourseInstance> findAllWithDetails();
+
+    boolean existsByCourseAndYearAndSemester(Course course, int year, int semester);
     
     @Query("SELECT ci FROM CourseInstance ci " +
            "WHERE ci.course.courseId = :courseId " +

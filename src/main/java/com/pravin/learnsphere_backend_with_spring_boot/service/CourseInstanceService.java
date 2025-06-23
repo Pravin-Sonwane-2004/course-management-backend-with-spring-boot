@@ -14,6 +14,9 @@ import com.pravin.learnsphere_backend_with_spring_boot.exception.NotFoundExcepti
 import com.pravin.learnsphere_backend_with_spring_boot.repository.CourseInstanceRepository;
 import com.pravin.learnsphere_backend_with_spring_boot.repository.CourseRepository;
 
+import com.pravin.learnsphere_backend_with_spring_boot.dto.CourseInstanceDTO;
+import java.util.stream.Collectors;
+
 @Service
 public class CourseInstanceService {
     private final CourseInstanceRepository courseInstanceRepository;
@@ -37,27 +40,50 @@ public class CourseInstanceService {
         return courseInstanceRepository.findByCourseIdAndYearAndSemester(courseId, year, semester);
     }
 
-    public List<CourseInstance> getAllInstances() {
-        return courseInstanceRepository.findAll();
+    @Transactional
+    public List<CourseInstanceDTO> getAllInstances() {
+        return courseInstanceRepository.findAllWithDetails().stream()
+            .map(instance -> {
+                CourseInstanceDTO dto = new CourseInstanceDTO();
+                dto.setInstanceId(instance.getInstanceId());
+                dto.setCourseId(instance.getCourse().getCourseId());
+                dto.setYear(instance.getYear());
+                dto.setSemester(instance.getSemester());
+                dto.setCourseName(instance.getCourse().getName());
+                dto.setCourseDescription(instance.getCourse().getDescription());
+                dto.setCoursePrerequisites(
+                    instance.getCourse().getPrerequisites() != null
+                        ? instance.getCourse().getPrerequisites().stream().map(p -> p.getCourseId()).toArray(String[]::new)
+                        : new String[0]);
+                return dto;
+            })
+            .collect(Collectors.toList());
     }
 
     @Transactional
     public CourseInstance createInstance(String courseId, int year, int semester) {
+        // Validate course existence
+        courseRepository.findByCourseId(courseId)
+            .orElseThrow(() -> new NotFoundException("Course not found: " + courseId));
+
         // Validate year and semester
         if (year <= 0 || semester <= 0 || semester > 2) {
             throw new BadRequestException("Invalid year or semester value");
         }
-        // Validate course exists
-        Course course = courseRepository.findByCourseId(courseId)
-                .orElseThrow(() -> new NotFoundException("Course not found: " + courseId));
-        
-        // Check for duplicate instance
-        if (courseInstanceRepository.findByCourseIdAndYearAndSemester(courseId, year, semester).isPresent()) {
-            throw new BadRequestException("Course instance already exists for this course, year, and semester");
+
+        // Check if instance already exists
+        Optional<CourseInstance> existingInstance = courseInstanceRepository.findByCourseIdAndYearAndSemester(courseId, year, semester);
+        if (existingInstance.isPresent()) {
+            throw new BadRequestException("Instance already exists for course " + courseId + " in year " + year + " semester " + semester);
         }
-        
+
         // Create new instance
-        CourseInstance instance = new CourseInstance(course, year, semester);
+        CourseInstance instance = new CourseInstance();
+        instance.setCourse(courseRepository.findByCourseId(courseId).get());
+        instance.setYear(year);
+        instance.setSemester(semester);
+        instance.setInstanceId(courseId + "_" + year + "_" + semester);
+
         return courseInstanceRepository.save(instance);
     }
 

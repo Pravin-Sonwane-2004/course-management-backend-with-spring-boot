@@ -1,70 +1,48 @@
 package com.pravin.learnsphere_backend_with_spring_boot.data;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import com.pravin.learnsphere_backend_with_spring_boot.entity.Course;
+import com.pravin.learnsphere_backend_with_spring_boot.entity.CourseInstance;
+import com.pravin.learnsphere_backend_with_spring_boot.repository.CourseRepository;
+import com.pravin.learnsphere_backend_with_spring_boot.repository.CourseInstanceRepository;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-import com.pravin.learnsphere_backend_with_spring_boot.dto.CourseDTO;
-import com.pravin.learnsphere_backend_with_spring_boot.dto.CourseInstanceDTO;
-
+@Configuration
 public class TestData {
+    @Bean
+    CommandLineRunner initData(CourseRepository courseRepo, CourseInstanceRepository instanceRepo) {
+        return args -> {
+            // Only add CS101 if it doesn't exist
+            if (!courseRepo.existsByCourseId("CS101")) {
+                Course cs101 = new Course();
+                cs101.setCourseId("CS101");
+                cs101.setName("Intro to Computer Science");
+                cs101.setDescription("Learn the basics of CS.");
+                courseRepo.save(cs101);
 
-  public static List<CourseDTO> getCourses() {
-    List<CourseDTO> courses = new ArrayList<>();
+                CourseInstance inst1 = new CourseInstance();
+                inst1.setCourse(cs101);
+                inst1.setYear(2024);
+                inst1.setSemester(1);
+                inst1.setInstanceId("CS101-2024-1");
+                instanceRepo.save(inst1);
+            }
 
-    // Core Computer Science Courses
-    courses.add(
-        new CourseDTO("CS101", "Introduction to Computer Science", "Basic concepts of computer science", Set.of()));
-    courses.add(new CourseDTO("CS102", "Data Structures", "Fundamental data structures and algorithms", Set.of()));
-    courses.add(new CourseDTO("CS201", "Algorithms", "Advanced algorithms and analysis", Set.of("CS102")));
-    courses.add(new CourseDTO("CS202", "Operating Systems", "Computer operating systems", Set.of("CS101", "CS102")));
-    courses.add(new CourseDTO("CS301", "Database Systems", "Database management systems", Set.of()));
-    courses.add(new CourseDTO("CS302", "Computer Networks", "Computer networking concepts", Set.of("CS202")));
+            if (!courseRepo.existsByCourseId("MATH101")) {
+                Course math101 = new Course();
+                math101.setCourseId("MATH101");
+                math101.setName("Calculus I");
+                math101.setDescription("Introductory calculus.");
+                courseRepo.save(math101);
 
-    // Software Engineering Courses
-    courses.add(new CourseDTO("SE201", "Software Engineering Fundamentals",
-        "Introduction to software engineering principles", Set.of("CS101", "CS102")));
-    courses.add(new CourseDTO("SE301", "Advanced Software Engineering", "Advanced topics in software engineering",
-        Set.of("SE201", "CS201")));
-
-    // Mathematics Courses
-    courses.add(new CourseDTO("MATH101", "Calculus I", "Introduction to calculus", Set.of()));
-    courses.add(new CourseDTO("MATH102", "Calculus II", "Advanced calculus topics", Set.of("MATH101")));
-
-    // Special Topics
-    courses.add(new CourseDTO("AI101", "Introduction to Artificial Intelligence", "Basic concepts of AI",
-        Set.of("CS101", "MATH101")));
-    courses.add(new CourseDTO("AI201", "Machine Learning", "Introduction to machine learning algorithms",
-        Set.of("AI101", "MATH102")));
-
-    return courses;
-  }
-
-  public static CourseDTO getSampleCourse() {
-    return new CourseDTO("CS101", "Introduction to Computer Science", "Basic concepts of computer science", Set.of());
-  }
-
-  public static CourseInstanceDTO getSampleCourseInstance() {
-    return new CourseInstanceDTO();
-  }
-
-  public static List<CourseDTO> getSampleCoursesForFrontend() {
-    List<CourseDTO> courses = new ArrayList<>();
-
-    courses.add(
-        new CourseDTO("CS101", "Introduction to Computer Science", "Basic concepts of computer science", Set.of()));
-    courses.add(new CourseDTO("CS102", "Data Structures", "Fundamental data structures and algorithms", Set.of()));
-    courses.add(new CourseDTO("CS201", "Algorithms", "Advanced algorithms and analysis", Set.of("CS102")));
-
-    return courses;
-  }
-
-  public static List<CourseInstanceDTO> getSampleCourseInstancesForFrontend() {
-    List<CourseInstanceDTO> instances = new ArrayList<>();
-
-    instances.add(new CourseInstanceDTO());
-    instances.add(new CourseInstanceDTO());
-
-    return instances;
-  }
+                CourseInstance inst2 = new CourseInstance();
+                inst2.setCourse(math101);
+                inst2.setYear(2024);
+                inst2.setSemester(2);
+                inst2.setInstanceId("MATH101-2024-2");
+                instanceRepo.save(inst2);
+            }
+        };
+    }
 }
