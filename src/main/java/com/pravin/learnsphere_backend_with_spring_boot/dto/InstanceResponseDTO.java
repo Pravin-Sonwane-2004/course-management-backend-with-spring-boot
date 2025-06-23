@@ -6,11 +6,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter
-@Setter
-@Builder
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class InstanceResponseDTO {
   private String courseId;
   private String title;

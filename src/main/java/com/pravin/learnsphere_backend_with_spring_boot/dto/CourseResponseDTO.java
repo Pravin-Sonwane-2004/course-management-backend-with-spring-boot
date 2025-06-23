@@ -10,23 +10,20 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Getter
-@Setter
-@Builder
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import java.util.Set;
+
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class CourseResponseDTO {
   private String courseId;
   private String name;
   private String description;
-  private Set<String> prerequisites = new HashSet<>();
-
-  public CourseResponseDTO(String courseId, String name, String description, List<String> prerequisites) {
-    this.courseId = courseId;
-    this.name = name;
-    this.description = description;
-    if (prerequisites != null) {
-      this.prerequisites = new HashSet<>(prerequisites);
-    }
-  }
+  private Set<String> prerequisites;
 }
+

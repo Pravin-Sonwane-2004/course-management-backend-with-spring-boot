@@ -4,20 +4,14 @@ import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
+@Builder
 public class CourseRequestDTO {
   private String courseId;
   private String title;
   private String description;
   private List<String> prerequisites;
-
-  // Getters and setters
 }
